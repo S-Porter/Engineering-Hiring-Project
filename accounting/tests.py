@@ -54,6 +54,24 @@ class TestBillingSchedules(unittest.TestCase):
         self.assertEquals(len(self.policy.invoices), 1)
         self.assertEquals(self.policy.invoices[0].amount_due, self.policy.annual_premium)
         
+    def test_twopay_billing_schedule(self):
+        self.policy.billing_schedule = "Two-Pay"
+        #No invoices currently exist
+        self.assertFalse(self.policy.invoices)
+        #2 invoices should be made when this is initiated
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(len(self.policy.invoices), 2)
+        self.assertEquals(self.policy.invoices[0].amount_due, self.policy.annual_premium / 2)
+        
+    def test_quarterly_billing_schedule(self):
+        self.policy.billing_schedule = "Quarterly"
+        #No invoices currently exist
+        self.assertFalse(self.policy.invoices)
+        #4 invoices should be made when this is initiated
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(len(self.policy.invoices), 4)
+        self.assertEquals(self.policy.invoices[0].amount_due, self.policy.annual_premium / 4)
+        
     def test_monthly_billing_schedule(self):
         self.policy.billing_schedule = "Monthly"
         #No invoices currently exist
@@ -121,3 +139,14 @@ class TestReturnAccountBalance(unittest.TestCase):
         self.payments.append(pa.make_payment(contact_id=self.policy.named_insured,
                                              date_cursor=invoices[1].bill_date, amount=600))
         self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
+        
+class TestCreateNewPolicy(unittest.TestCase):
+    
+    def test_create_new_policy(self):
+        details = {'policy_name': 'Policy Four', 'billing': 'Two-Pay',
+                   'insured': 'Ryan Bucket', 'agent': 'John Doe',
+                   'premium': 500, 'eff_date': datetime.strptime('2015-02-01', '%Y-%m-%d')}
+        self.policy = PolicyAccounting.create_new_policy(details['policy_name'], details['billing'],
+                                                         details['insured'], details['agent'],
+                                                         details['premium'], details['eff_date'])
+        self.assertEquals(self.policy.return_account_balance(), 250)

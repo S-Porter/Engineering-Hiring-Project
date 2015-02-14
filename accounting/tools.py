@@ -28,11 +28,106 @@ class PolicyAccounting(object):
          Creates a new object tied to a specific policy id. Checks if any
          invoices have been created and initializes them if necessary.
         """
-        self.policy = Policy.query.filter_by(id=policy_id).one()
+        self.policy = Policy.query.filter_by(id=policy_id)
+
+        if self.policy.count() == 0:
+            raw = raw_input('Policy not found, do you want to create a new policy? (yes/no): ')
+            answer = raw.lower().strip()
+            if answer in ['yes', 'y']:
+                details = self.get_policy_details_from_console()
+                self.policy = PolicyAccounting.create_new_policy(details['policy_name'], details['billing'],
+                                                                 details['insured'], details['agent'],
+                                                                 details['premium'], details['eff_date'])
+            else:
+                return
+        elif self.policy.count() > 1:
+            logging.warning('Found more than 1 policy with that ID, exiting.')
+            return
+        else:
+            self.policy = self.policy.first()
 
         if not self.policy.invoices:
             logging.info('No invoices found for policy ' + str(policy_id))
             self.make_invoices()
+            
+    @staticmethod
+    def create_new_policy(policy_number, billing_type, named_insured,
+                          agent_name, annual_premium, effective_date=None):
+        """
+         Factory method that creates a new policy and commits it to the db.
+         Returns a PolicyAccounting object for the created policy.
+        """
+        if not effective_date:
+            effective_date = datetime.now().date()
+        
+        logging.info('Creating new policy')
+        new_policy = Policy(policy_number, effective_date, annual_premium)
+        new_policy.billing_schedule = billing_type
+
+        agent_query = Contact.query.filter_by(name=agent_name)\
+                                   .filter(Contact.role == 'Agent')
+        if agent_query.count() == 0:
+            logging.info('Given agent name not found, adding new agent to db.')
+            agent = Contact(agent_name, 'Agent')
+            db.session.add(agent)
+            db.session.commit()
+        elif agent_query.count() > 1:
+            logging.info('Found more than 1 agent with the same name, picking the first.')
+            agent = agent_query.first()
+        else:
+            agent = agent_query.first()
+            
+        new_policy.agent = agent.id
+
+        insured_query = Contact.query.filter_by(name=named_insured)\
+                                     .filter(Contact.role == 'Named Insured')
+        if insured_query.count() == 0:
+            logging.info('Given named-insured was not found, adding to db.')
+            insured = Contact(named_insured, 'Named Insured')
+            db.session.add(insured)
+            db.session.commit()
+        elif insured_query.count() > 1:
+            logging.info('Found more than 1 insured with the same name, picking the first.')
+            insured = insured_query.first()
+        else:
+            insured = insured_query.first()
+
+        new_policy.named_insured = insured.id
+        db.session.add(new_policy)
+        db.session.commit()
+
+        return PolicyAccounting(new_policy.id)
+
+    def get_policy_details_from_console(self):
+        """
+         Prompts the user for policy details & returns a dict with all necessary info.
+        """
+        policy_info = {}
+
+        raw = raw_input('Please enter the policy number: ')
+        policy_info['policy_name'] = str.title(raw.strip())
+
+        raw = raw_input('Please enter effective date as yyyy-mm-dd, or leave it blank and hit enter for today: ')
+        if not raw.strip():
+            policy_info['eff_date'] = datetime.now().date()
+        else:
+            policy_info['eff_date'] = datetime.strptime(raw.strip(), '%Y-%m-%d')
+
+        raw = raw_input('Please enter a billing frequency: ')
+        while str.title(raw.strip()) not in ['Annual', 'Two-Pay', 'Quarterly', 'Monthly']:
+            raw = raw_input('Billing options are Annual, Two-Pay, Quarterly, and Monthly: ')
+        policy_info['billing'] = str.title(raw.strip())
+
+        raw = raw_input('Please enter the named-insured, exactly as it should appear: ')
+        policy_info['insured'] = str.title(raw.strip())
+
+        raw = raw_input("Please enter the agent's name: ")
+        policy_info['agent'] = str.title(raw.strip())
+        
+        raw = raw_input("Please enter the yearly premium as a whole number: ")
+        policy_info['premium'] = raw.strip()
+
+        return policy_info
 
     def return_account_balance(self, date_cursor=None):
         """
@@ -253,3 +348,7 @@ def insert_data():
     payment_for_p2 = Payment(p2.id, anna_white.id, 400, date(2015, 2, 1))
     db.session.add(payment_for_p2)
     db.session.commit()
+    
+    PolicyAccounting.create_new_policy('Policy Four', 'Two-Pay', 'Ryan Bucket',
+                                       'John Doe', 500,
+                                       datetime.strptime('2015-02-01', '%Y-%m-%d'))
