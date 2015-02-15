@@ -26,7 +26,9 @@ class PolicyAccounting(object):
     def __init__(self, policy_id):
         """
          Creates a new object tied to a specific policy id. Checks if any
-         invoices have been created and initializes them if necessary.
+         invoices have been created and initializes them if necessary. Also
+         allows the user to create a new policy from the console if they
+         attempted to use a policy ID that didn't exist.
         """
         self.policy = Policy.query.filter_by(id=policy_id)
 
@@ -49,7 +51,7 @@ class PolicyAccounting(object):
         if not self.policy.invoices:
             logging.info('No invoices found for policy ' + str(policy_id))
             self.make_invoices()
-            
+
     @staticmethod
     def create_new_policy(policy_number, billing_type, named_insured,
                           agent_name, annual_premium, effective_date=None):
@@ -59,7 +61,7 @@ class PolicyAccounting(object):
         """
         if not effective_date:
             effective_date = datetime.now().date()
-        
+
         logging.info('Creating new policy')
         new_policy = Policy(policy_number, effective_date, annual_premium)
         new_policy.billing_schedule = billing_type
@@ -76,7 +78,7 @@ class PolicyAccounting(object):
             agent = agent_query.first()
         else:
             agent = agent_query.first()
-            
+
         new_policy.agent = agent.id
 
         insured_query = Contact.query.filter_by(name=named_insured)\
@@ -100,14 +102,15 @@ class PolicyAccounting(object):
 
     def get_policy_details_from_console(self):
         """
-         Prompts the user for policy details & returns a dict with all necessary info.
+         Prompts user for policy details & returns a dict with all necessary info.
         """
         policy_info = {}
 
         raw = raw_input('Please enter the policy number: ')
         policy_info['policy_name'] = str.title(raw.strip())
 
-        raw = raw_input('Please enter effective date as yyyy-mm-dd, or leave it blank and hit enter for today: ')
+        raw = raw_input('Please enter effective date as yyyy-mm-dd, or '
+                        + 'leave it blank and hit enter for today: ')
         if not raw.strip():
             policy_info['eff_date'] = datetime.now().date()
         else:
@@ -123,7 +126,7 @@ class PolicyAccounting(object):
 
         raw = raw_input("Please enter the agent's name: ")
         policy_info['agent'] = str.title(raw.strip())
-        
+
         raw = raw_input("Please enter the yearly premium as a whole number: ")
         policy_info['premium'] = raw.strip()
 
@@ -146,19 +149,19 @@ class PolicyAccounting(object):
         for invoice in invoices:
             due_now += invoice.amount_due
 
-        logging.debug('Total due, not counting payments: ' + str(due_now))
+        logging.debug('Total due, not counting payments: $' + str(due_now))
         payments = Payment.query.filter_by(policy_id=self.policy.id)\
                                 .filter(Payment.transaction_date <= date_cursor)\
                                 .all()
 
         for payment in payments:
-            logging.debug('Payment - ' + str(payment.amount_paid))
+            logging.debug('Payment found - $' + str(payment.amount_paid))
             due_now -= payment.amount_paid
 
         logging.info('Account balance: ' + str(due_now))
         return due_now
 
-    def make_payment(self, contact_id=None, date_cursor=None, amount=0):
+    def make_payment(self, amount=0, contact_id=None, date_cursor=None):
         """
          Adds a new payment to the account with the given information.
         """
@@ -167,12 +170,16 @@ class PolicyAccounting(object):
         logging.debug('Making payment for date ' + str(date_cursor))
 
         if not contact_id:
-            try:
-                logging.debug("No contact_id given, attempting to use policy's named_insured.")
+            if self.policy.named_insured:
+                logging.debug("No contact_id given, using the policy's named_insured.")
                 contact_id = self.policy.named_insured
-            except:
-                logging.warning('No named_insured found on the policy. Exiting without payment.')
-                pass
+            elif self.policy.agent:
+                logging.debug("No contact_id given and no named-insured"
+                              + " on the policy, using the policy's agent.")
+                contact_id = self.policy.agent
+            else:
+                logging.debug("No contact_id, named-insured, or agent could be found. Exiting.")
+                return
 
         payment = Payment(self.policy.id,
                           contact_id,
@@ -184,6 +191,27 @@ class PolicyAccounting(object):
         logging.debug("Payment committed.")
 
         return payment
+
+    def update_named_insured(self, new_insured):
+        """
+         Updates the policyholder for the current account.
+         Returns the id of the new named-insured.
+        """
+        logging.info('Updating named-insured for policy id ' + str(self.policy.id))
+        contact_query = Contact.query.filter_by(name=new_insured)\
+                                     .filter(Contact.role == 'Named Insured')
+        if contact_query.count() == 0:
+            logging.info('No current contact with this name, creating new contact.')
+            insured = Contact(new_insured, 'Named Insured')
+            db.session.add(insured)
+            db.session.commit()
+        else:
+            logging.info('Named-insured already in the system, keeping existing id.')
+            insured = contact_query.first()
+
+        self.policy.named_insured = insured.id
+        db.session.commit()
+        return self.policy.named_insured
 
     def evaluate_cancellation_pending_due_to_non_pay(self, date_cursor=None):
         """
@@ -348,7 +376,11 @@ def insert_data():
     payment_for_p2 = Payment(p2.id, anna_white.id, 400, date(2015, 2, 1))
     db.session.add(payment_for_p2)
     db.session.commit()
-    
+
     PolicyAccounting.create_new_policy('Policy Four', 'Two-Pay', 'Ryan Bucket',
                                        'John Doe', 500,
                                        datetime.strptime('2015-02-01', '%Y-%m-%d'))
+
+    pa = PolicyAccounting(1)
+    pa.update_named_insured('John Doe')
+    pa.make_payment(365)

@@ -136,12 +136,39 @@ class TestReturnAccountBalance(unittest.TestCase):
         pa = PolicyAccounting(self.policy.id)
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
                                 .order_by(Invoice.bill_date).all()
-        self.payments.append(pa.make_payment(contact_id=self.policy.named_insured,
-                                             date_cursor=invoices[1].bill_date, amount=600))
+        self.payments.append(pa.make_payment(amount=600, contact_id=self.policy.named_insured,
+                                             date_cursor=invoices[1].bill_date))
         self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
-        
-class TestCreateNewPolicy(unittest.TestCase):
-    
+
+class TestMiscFunctions(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.test_agent = Contact('Test Agent2', 'Agent')
+        cls.test_insured = Contact('Test Insured2', 'Named Insured')
+        db.session.add(cls.test_agent)
+        db.session.add(cls.test_insured)
+        db.session.commit()
+
+        cls.policy = Policy('Test Policy2', date(2015, 1, 1), 1200)
+        cls.policy.named_insured = cls.test_insured.id
+        cls.policy.agent = cls.test_agent.id
+        db.session.add(cls.policy)
+        db.session.commit()
+
+    @classmethod
+    def tearDownClass(cls):
+        db.session.delete(cls.test_insured)
+        db.session.delete(cls.test_agent)
+        db.session.delete(cls.policy)
+        db.session.commit()
+
+    def test_make_payment(self):
+        #pa = PolicyAccounting(TestMiscFunctions.policy.id)
+        #pmt_amount = pa.make_payment(400)
+        #self.assertEquals(pa.return_account_balance(), 800)
+        pass
+
     def test_create_new_policy(self):
         details = {'policy_name': 'Policy Four', 'billing': 'Two-Pay',
                    'insured': 'Ryan Bucket', 'agent': 'John Doe',
