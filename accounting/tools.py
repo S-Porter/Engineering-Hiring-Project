@@ -106,12 +106,37 @@ class PolicyAccounting(object):
 
         return PolicyAccounting(new_policy.id)
 
+    def cancel_policy(self, reason, date_cursor=None):
+        """
+         Cancels a policy and stores the reason + date.
+        """
+        if self.policy.status == 'Canceled':
+            print "This policy has already been canceled, no changes made."
+            return False
+
+        if not date_cursor:
+            date_cursor = datetime.now().date()
+
+        reason = reason.strip()
+        if reason == '':
+            reason = 'not given'
+
+        self.policy.canceled_date = date_cursor
+        self.policy.cancel_reason = reason
+        self.policy.status = 'Canceled'
+        db.session.commit()
+        print "This policy has been canceled."
+
     def change_billing_schedule(self, new_billing_schedule):
         """
          This marks all current invoices as deleted and recreates a
          new set using the specified billing schedule. Starts the
          new invoices at the policy effective date.
         """
+        if self.policy.status in ['Canceled', 'Expired']:
+            print "Unable to change billing schedule while policy is inactive."
+            return
+
         if str.title(new_billing_schedule) not in ['Annual', 'Two-Pay', 'Quarterly', 'Monthly']:
             print "Unknown billing schedule. Options are Annual, Two-Pay, Quarterly, and Monthly: "
         if self.policy.billing_schedule == new_billing_schedule:
@@ -188,7 +213,6 @@ class PolicyAccounting(object):
         """
          Adds a new payment to the account with the given information.
         """
-
         if not date_cursor:
             date_cursor = datetime.now().date()
         logging.debug('Making payment for date ' + str(date_cursor))
@@ -226,6 +250,10 @@ class PolicyAccounting(object):
          Updates the policyholder for the current account.
          Returns the id of the new named-insured.
         """
+        if self.policy.status in ['Canceled', 'Expired']:
+            print "Unable to change the named-insured while policy is inactive."
+            return False
+
         logging.info('Updating named-insured for policy id ' + str(self.policy.id))
         contact_query = Contact.query.filter_by(name=new_insured)\
                                      .filter(Contact.role == 'Named Insured')

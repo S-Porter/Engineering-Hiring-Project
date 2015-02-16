@@ -209,6 +209,17 @@ class TestCancellations(unittest.TestCase):
         # is already due (this only applies to monthly billing).
         self.assertEquals(pa.return_account_balance(date(2015, 2, 7)), 100)
 
+    def test_policy_cancellation(self):
+        pa = PolicyAccounting(self.policy.id)
+        pa.cancel_policy('testing reasons')
+        self.assertEquals(self.policy.status, 'Canceled')
+        self.assertNotEquals(self.policy.cancel_reason, '')
+
+    def test_policy_cancellation_on_already_canceled(self):
+        pa = PolicyAccounting(self.policy.id)
+        pa.cancel_policy('testing reasons')
+        self.assertFalse(pa.cancel_policy('more testing reasons'))
+
 
 class TestChangedBillingCycles(unittest.TestCase):
 
@@ -288,9 +299,22 @@ class TestMiscFunctions(unittest.TestCase):
         db.session.delete(cls.policy)
         db.session.commit()
 
-    def test_make_payment(self):
+    def setUp(self):
+        self.payments = []
 
-        pass
+    def tearDown(self):
+        for invoice in self.policy.invoices:
+            db.session.delete(invoice)
+        for payment in self.payments:
+            db.session.delete(payment)
+        db.session.commit()
+
+    def test_make_payment(self):
+        self.policy.billing_schedule = 'Monthly'
+        pa = PolicyAccounting(self.policy.id)
+        self.payments.append(pa.make_payment(100, self.policy.named_insured, date(2015, 1, 10)))
+        self.assertEquals(pa.return_account_balance(date(2015, 1, 10)), 0)
+
 """
     def test_create_new_policy(self):
         details = {'policy_name': 'Policy Four', 'billing': 'Two-Pay',
