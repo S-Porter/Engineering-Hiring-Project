@@ -2,6 +2,7 @@
 
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
+from sqlalchemy import and_
 
 from accounting import db
 from models import Contact, Invoice, Payment, Policy
@@ -33,7 +34,8 @@ class PolicyAccounting(object):
         self.policy = Policy.query.filter_by(id=policy_id)
 
         if self.policy.count() == 0:
-            raw = raw_input('Policy not found, do you want to create a new policy? (yes/no): ')
+            raw = raw_input('Policy not found, do you want to'
+                            + 'create a new policy? (yes/no): ')
             answer = raw.lower().strip()
             if answer in ['yes', 'y']:
                 details = self.get_policy_details_from_console()
@@ -74,7 +76,8 @@ class PolicyAccounting(object):
             db.session.add(agent)
             db.session.commit()
         elif agent_query.count() > 1:
-            logging.info('Found more than 1 agent with the same name, picking the first.')
+            logging.info('Found more than 1 agent with the '
+                         + 'same name, picking the first.')
             agent = agent_query.first()
         else:
             agent = agent_query.first()
@@ -89,7 +92,8 @@ class PolicyAccounting(object):
             db.session.add(insured)
             db.session.commit()
         elif insured_query.count() > 1:
-            logging.info('Found more than 1 insured with the same name, picking the first.')
+            logging.info('Found more than 1 insured with the '
+                         + 'same name, picking the first.')
             insured = insured_query.first()
         else:
             insured = insured_query.first()
@@ -102,7 +106,8 @@ class PolicyAccounting(object):
 
     def get_policy_details_from_console(self):
         """
-         Prompts user for policy details & returns a dict with all necessary info.
+         Prompts the user for policy details and returns a dict with all
+         the info required to make a policy.
         """
         policy_info = {}
 
@@ -121,7 +126,8 @@ class PolicyAccounting(object):
             raw = raw_input('Billing options are Annual, Two-Pay, Quarterly, and Monthly: ')
         policy_info['billing'] = str.title(raw.strip())
 
-        raw = raw_input('Please enter the named-insured, exactly as it should appear: ')
+        raw = raw_input('Please enter the named-insured, '
+                        + 'exactly as it should appear: ')
         policy_info['insured'] = str.title(raw.strip())
 
         raw = raw_input("Please enter the agent's name: ")
@@ -134,8 +140,8 @@ class PolicyAccounting(object):
 
     def return_account_balance(self, date_cursor=None):
         """
-         Returns the remaining account balance on a specified date. Defaults to
-         today's date if nothing is specified.
+         Returns the remaining account balance on a specified date. Defaults
+         to today's date if nothing is specified.
         """
         if not date_cursor:
             date_cursor = datetime.now().date()
@@ -165,6 +171,7 @@ class PolicyAccounting(object):
         """
          Adds a new payment to the account with the given information.
         """
+
         if not date_cursor:
             date_cursor = datetime.now().date()
         logging.debug('Making payment for date ' + str(date_cursor))
@@ -180,6 +187,11 @@ class PolicyAccounting(object):
             else:
                 logging.debug("No contact_id, named-insured, or agent could be found. Exiting.")
                 return
+
+        contact = Contact.query.filter_by(id=contact_id).one()
+        if contact.role != 'Agent' and self.evaluate_cancellation_pending_due_to_non_pay(date_cursor):
+            print "Cancellation pending, please contact your agent to make a payment."
+            return False
 
         payment = Payment(self.policy.id,
                           contact_id,
@@ -201,12 +213,14 @@ class PolicyAccounting(object):
         contact_query = Contact.query.filter_by(name=new_insured)\
                                      .filter(Contact.role == 'Named Insured')
         if contact_query.count() == 0:
-            logging.info('No current contact with this name, creating new contact.')
+            logging.info('No current contact with this name, '
+                         + 'creating new contact.')
             insured = Contact(new_insured, 'Named Insured')
             db.session.add(insured)
             db.session.commit()
         else:
-            logging.info('Named-insured already in the system, keeping existing id.')
+            logging.info('Named-insured already in the system, '
+                         + 'keeping existing id.')
             insured = contact_query.first()
 
         self.policy.named_insured = insured.id
@@ -215,18 +229,32 @@ class PolicyAccounting(object):
 
     def evaluate_cancellation_pending_due_to_non_pay(self, date_cursor=None):
         """
-         If this function returns true, an invoice
-         on a policy has passed the due date without
-         being paid in full. However, it has not necessarily
-         made it to the cancel_date yet.
+         If this function returns true, an invoice on a policy has
+         passed the due date without being paid in full. However,
+         it has not necessarily made it to the cancel_date yet.
         """
-        logging.warning("This function currently does nothing.")
-        pass
+        if not date_cursor:
+            date_cursor = datetime.now().date()
+        logging.info("Checking pending cancel for " + str(date_cursor))
+
+        invoice = Invoice.query.filter_by(policy_id=self.policy.id)\
+                               .filter(and_(Invoice.due_date < date_cursor,
+                                            Invoice.cancel_date > date_cursor))\
+                               .first()
+        if not invoice:
+            logging.info('Not in pending time period.')
+            return False
+        elif self.return_account_balance(date_cursor):
+            logging.info('In pending time period, balance due. Pending cancellation.')
+            return True
+        else:
+            logging.info('In pending time period, account is current.')
+            return False
 
     def evaluate_cancel(self, date_cursor=None):
         """
-         Determines whether the policy should have been cancelled on the given date
-         (or today, if the date was not given).
+         Determines whether the policy should have been cancelled on the
+         given date(or today, if the date was not given).
         """
         if not date_cursor:
             logging.debug("No date passed, evaluating at the current date.")
@@ -252,7 +280,8 @@ class PolicyAccounting(object):
 
     def make_invoices(self):
         """
-         Deletes and recreates all invoices for the year, starting at the policy effective_date.
+         Deletes and recreates all invoices for the year,
+         starting at the policy effective_date.
         """
         logging.debug('Deleting any invoices for ' + self.policy.policy_number)
         for invoice in self.policy.invoices:
@@ -322,11 +351,14 @@ class PolicyAccounting(object):
 # The functions below are for the db and
 # shouldn't need to be edited.
 ################################
+
+
 def build_or_refresh_db():
     db.drop_all()
     db.create_all()
     insert_data()
     print "DB Ready!"
+
 
 def insert_data():
     # Contacts
