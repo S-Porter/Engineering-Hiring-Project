@@ -210,6 +210,61 @@ class TestCancellations(unittest.TestCase):
         self.assertEquals(pa.return_account_balance(date(2015, 2, 7)), 100)
 
 
+class TestChangedBillingCycles(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.test_agent = Contact('Test Agent', 'Agent')
+        cls.test_insured = Contact('Test Insured', 'Named Insured')
+        db.session.add(cls.test_agent)
+        db.session.add(cls.test_insured)
+        db.session.commit()
+
+        cls.policy = Policy('Test Policy', date(2015, 1, 1), 1200)
+        cls.policy.named_insured = cls.test_insured.id
+        cls.policy.agent = cls.test_agent.id
+        db.session.add(cls.policy)
+        db.session.commit()
+
+    @classmethod
+    def tearDownClass(cls):
+        db.session.delete(cls.test_insured)
+        db.session.delete(cls.test_agent)
+        db.session.delete(cls.policy)
+        db.session.commit()
+
+    def setUp(self):
+        self.payments = []
+
+    def tearDown(self):
+        for invoice in self.policy.invoices:
+            db.session.delete(invoice)
+        for payment in self.payments:
+            db.session.delete(payment)
+        db.session.commit()
+
+    def test_change_billing_cycle_annual_to_two_pay(self):
+        self.policy.billing_schedule = 'Annual'
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(pa.return_account_balance(date(2015, 1, 2)), 1200)
+        pa.change_billing_schedule('Two-Pay')
+        self.assertEquals(pa.return_account_balance(date(2015, 1, 2)), 600)
+
+    def test_change_billing_cycle_two_pay_to_quarterly(self):
+        self.policy.billing_schedule = 'Two-Pay'
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(pa.return_account_balance(date(2015, 1, 2)), 600)
+        pa.change_billing_schedule('Quarterly')
+        self.assertEquals(pa.return_account_balance(date(2015, 1, 2)), 300)
+
+    def test_change_billing_cycle_quarterly_to_monthly(self):
+        self.policy.billing_schedule = 'Quarterly'
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(pa.return_account_balance(date(2015, 1, 2)), 300)
+        pa.change_billing_schedule('Monthly')
+        self.assertEquals(pa.return_account_balance(date(2015, 1, 2)), 100)
+
+
 class TestMiscFunctions(unittest.TestCase):
 
     @classmethod

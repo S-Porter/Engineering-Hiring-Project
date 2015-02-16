@@ -1,14 +1,16 @@
 #!/user/bin/env python2.7
 
+#from __future__ import division
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_
+
 
 from accounting import db
 from models import Contact, Invoice, Payment, Policy
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 """
 #######################################################
@@ -104,6 +106,21 @@ class PolicyAccounting(object):
 
         return PolicyAccounting(new_policy.id)
 
+    def change_billing_schedule(self, new_billing_schedule):
+        """
+         This marks all current invoices as deleted and recreates a
+         new set using the specified billing schedule. Starts the
+         new invoices at the policy effective date.
+        """
+        if str.title(new_billing_schedule) not in ['Annual', 'Two-Pay', 'Quarterly', 'Monthly']:
+            print "Unknown billing schedule. Options are Annual, Two-Pay, Quarterly, and Monthly: "
+        if self.policy.billing_schedule == new_billing_schedule:
+            print "This policy is already on " + new_billing_schedule + " billing."
+        else:
+            self.policy.billing_schedule = new_billing_schedule
+            self.make_invoices()
+            print "Billing updated, you now have an outstanding balance of $" + str(self.return_account_balance())
+
     def get_policy_details_from_console(self):
         """
          Prompts the user for policy details and returns a dict with all
@@ -148,7 +165,7 @@ class PolicyAccounting(object):
 
         logging.debug("Finding balance for " + str(date_cursor))
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
-                                .filter(Invoice.bill_date <= date_cursor)\
+                                .filter(and_(Invoice.bill_date <= date_cursor, Invoice.deleted == 0))\
                                 .order_by(Invoice.bill_date)\
                                 .all()
         due_now = 0
@@ -239,7 +256,8 @@ class PolicyAccounting(object):
 
         invoice = Invoice.query.filter_by(policy_id=self.policy.id)\
                                .filter(and_(Invoice.due_date < date_cursor,
-                                            Invoice.cancel_date > date_cursor))\
+                                            Invoice.cancel_date > date_cursor,
+                                            Invoice.deleted == 0))\
                                .first()
         if not invoice:
             logging.info('Not in pending time period.')
@@ -262,7 +280,8 @@ class PolicyAccounting(object):
 
         logging.debug("Querying invoices...")
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
-                                .filter(Invoice.cancel_date <= date_cursor)\
+                                .filter(and_(Invoice.cancel_date <= date_cursor,
+                                             Invoice.deleted == 0))\
                                 .order_by(Invoice.bill_date)\
                                 .all()
         logging.debug(str(len(invoices)) + " invoices found...")
@@ -283,9 +302,9 @@ class PolicyAccounting(object):
          Deletes and recreates all invoices for the year,
          starting at the policy effective_date.
         """
-        logging.debug('Deleting any invoices for ' + self.policy.policy_number)
+        logging.debug('Marking current invoices as deleted for policy ' + self.policy.policy_number)
         for invoice in self.policy.invoices:
-            db.session.delete(invoice)
+            invoice.deleted = 1
 
         billing_schedules = {'Annual': None, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
 
