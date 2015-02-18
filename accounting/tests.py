@@ -314,14 +314,3 @@ class TestMiscFunctions(unittest.TestCase):
         pa = PolicyAccounting(self.policy.id)
         self.payments.append(pa.make_payment(100, self.policy.named_insured, date(2015, 1, 10)))
         self.assertEquals(pa.return_account_balance(date(2015, 1, 10)), 0)
-
-"""
-    def test_create_new_policy(self):
-        details = {'policy_name': 'Policy Four', 'billing': 'Two-Pay',
-                   'insured': 'Ryan Bucket', 'agent': 'John Doe',
-                   'premium': 500, 'eff_date': datetime.strptime('2015-02-01', '%Y-%m-%d')}
-        self.policy = PolicyAccounting.create_new_policy(details['policy_name'], details['billing'],
-                                                         details['insured'], details['agent'],
-                                                         details['premium'], details['eff_date'])
-        self.assertEquals(self.policy.return_account_balance(), 250)
-"""

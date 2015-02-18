@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main_page.css') }}">
+  <title>Insurance Portal</title>
+  <meta name="description" content="View all your insurance information from one easy page!">
+  <meta name="author" content="Sean Porter">
+  <!--<script src="{{ url_for('static', filename='jquery-1.11.2.min.js') }}"></script>-->
+  <!--[if lt IE 9]>
+<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+</head>
+<body>
+    <h1>Information for policy {{ passed_data['policy_id'] }} on {{ passed_data['date_cursor'] }}:</h1>
+    <ul>
+        <li><label>Policy ID:</label>{{ passed_data['policy_id'] }}</li>
+        <li><label>Policy Name:</label>{{ passed_data['policy_name'] }}</li>
+        <li><label>Named Insured:</label>{{ passed_data['named_insured'] }}</li>
+        <li><label>Account Balance:</label>${{ passed_data['balance'] }}</li>
+        <li><label>Effective Date:</label>{{ passed_data['effective_date'] }}</li>
+        <li><label>Billing Schedule:</label>{{ passed_data['billing'] }}</li>
+        <li><label>Annual Premium:</label>${{ passed_data['annual_premium'] }}</li>
+        <li><label>Current Status:</label>{{ passed_data['status'] }}</li>
+        
+        {% if passed_data['canceled_date'] %}
+        <li><label>Canceled date:</label>{{ passed_data['canceled_date'] }}</li>
+        <li><label>Cancellation reason:</label>{{ passed_data['cancel_reason'] }}</li>
+        {% endif %}
+        
+        <li><label>Agent:</label>{{ passed_data['agent_name'] }}</li>
+    </ul>
+    <h2>Current Invoices</h2>
+        <table>
+            <tr>
+                <th>Bill Date</th>
+                <th>Due Date</th>
+                <th>Cancel Date</th>
+                <th>Amount Due</th>
+            </tr>
+            {% for invoice in passed_data['current_invoices'] %}
+            <tr>
+                <th>{{ invoice.bill_date }}</th>
+                <th>{{ invoice.due_date }}</th>
+                <th>{{ invoice.cancel_date }}</th>
+                <th>${{ invoice.amount_due }}</th>
+            </tr>
+            {% endfor %}
+        </table>
+    <h2>Payments</h2>
+    {% if not passed_data['payments'] %}
+    <p>No payments have been made on this account.</p>
+    {% else %}
+        <table>
+            <tr>
+                <th>Contact</th>
+                <th>Amount Paid</th>
+                <th>Payment Date</th>
+            </tr>
+            {% for payment in passed_data['payments'] %}
+            <tr>
+                <th>{{ payment.contact_name }}</th>
+                <th>${{ payment.amount_paid }}</th>
+                <th>{{ payment.transaction_date }}</th>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+    {% if passed_data['deleted_invoices'] %}
+    <h2>Previous Invoices</h2>
+        <p>These invoices are from previous billing cycles and do not represent the current amounts.</p>
+        <table>
+            <tr>
+                <th>Bill Date</th>
+                <th>Due Date</th>
+                <th>Cancel Date</th>
+                <th>Amount Due</th>
+            </tr>
+            {% for invoice in passed_data['deleted_invoices'] %}
+            <tr>
+                <th>{{ invoice.bill_date }}</th>
+                <th>{{ invoice.due_date }}</th>
+                <th>{{ invoice.cancel_date }}</th>
+                <th>${{ invoice.amount_due }}</th>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</body>
+</html>

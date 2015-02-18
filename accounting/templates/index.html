@@ -2,14 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Some sort of title?</title>
-  <meta name="description" content="What is this?">
-  <meta name="author" content="Who?">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main_page.css') }}">
+  <title>Insurance Portal</title>
+  <meta name="description" content="View all your insurance information from one easy page!">
+  <meta name="author" content="Sean Porter">
+  <!--<script src="{{ url_for('static', filename='jquery-1.11.2.min.js') }}"></script>-->
   <!--[if lt IE 9]>
 <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
 <![endif]-->
 </head>
 <body>
-    <p>Your server is working.</p>
+    <p>Welcome to the insurance portal, {{ name }}!!</p>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <p>{{ text }}</p>
+    <form method="post" action="{{ url_for('policy') }}">
+        <fieldset>
+            <legend>Enter policy information</legend>
+            <label>Policy ID:</label><input type="textbox" name="id" required></input><br/>
+            <label>Date:</label><input id="date_box" type="date" name="date"></input><br/>
+            <input type="submit" value="Submit"></input>
+        </fieldset>
+    </form>
 </body>
 </html>

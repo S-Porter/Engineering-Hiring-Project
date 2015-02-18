@@ -2,9 +2,9 @@
 
 #from __future__ import division
 from datetime import date, datetime
+from decimal import Decimal, ROUND_05UP
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_
-
 
 from accounting import db
 from models import Contact, Invoice, Payment, Policy
@@ -330,6 +330,8 @@ class PolicyAccounting(object):
          Deletes and recreates all invoices for the year,
          starting at the policy effective_date.
         """
+        cents = Decimal('.01')
+        
         logging.debug('Marking current invoices as deleted for policy ' + self.policy.policy_number)
         for invoice in self.policy.invoices:
             invoice.deleted = 1
