@@ -1,6 +1,5 @@
 #!/user/bin/env python2.7
 
-#from __future__ import division
 from datetime import date, datetime
 from decimal import Decimal, ROUND_05UP
 from dateutil.relativedelta import relativedelta
@@ -185,6 +184,7 @@ class PolicyAccounting(object):
          Returns the remaining account balance on a specified date. Defaults
          to today's date if nothing is specified.
         """
+        cents = Decimal('.01')
         if not date_cursor:
             date_cursor = datetime.now().date()
 
@@ -193,26 +193,28 @@ class PolicyAccounting(object):
                                 .filter(and_(Invoice.bill_date <= date_cursor, Invoice.deleted == 0))\
                                 .order_by(Invoice.bill_date)\
                                 .all()
-        due_now = 0
+        due_now = Decimal(0)
         for invoice in invoices:
             due_now += invoice.amount_due
 
-        logging.debug('Total due, not counting payments: $' + str(due_now))
+        logging.debug('Total due, not counting payments: $' + str(due_now.quantize(cents, ROUND_05UP)))
         payments = Payment.query.filter_by(policy_id=self.policy.id)\
                                 .filter(Payment.transaction_date <= date_cursor)\
                                 .all()
 
         for payment in payments:
-            logging.debug('Payment found - $' + str(payment.amount_paid))
+            logging.debug('Payment found - $'
+                          + str(Decimal(payment.amount_paid).quantize(cents, ROUND_05UP)))
             due_now -= payment.amount_paid
 
-        logging.info('Account balance: ' + str(due_now))
-        return due_now
+        logging.info('Account balance: ' + str(due_now.quantize(cents, ROUND_05UP)))
+        return due_now.quantize(cents, ROUND_05UP)
 
     def make_payment(self, amount=0, contact_id=None, date_cursor=None):
         """
          Adds a new payment to the account with the given information.
         """
+        amount = Decimal(amount)
         if not date_cursor:
             date_cursor = datetime.now().date()
         logging.debug('Making payment for date ' + str(date_cursor))
@@ -331,11 +333,30 @@ class PolicyAccounting(object):
          starting at the policy effective_date.
         """
         cents = Decimal('.01')
-        
+
         logging.debug('Marking current invoices as deleted for policy ' + self.policy.policy_number)
         for invoice in self.policy.invoices:
             invoice.deleted = 1
 
+        billing_schedules = {'Annual': 1, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
+
+        required_invoices = billing_schedules[self.policy.billing_schedule]
+        bill_amount = Decimal(self.policy.annual_premium) / Decimal(billing_schedules.get(self.policy.billing_schedule))
+        logging.debug('Creating invoices...')
+        invoices = []
+
+        for i in range(required_invoices):
+            months_after_eff_date = i * (12 / required_invoices)
+            bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
+            invoice = Invoice(self.policy.id,
+                                  bill_date,
+                                  bill_date + relativedelta(months=1),
+                                  bill_date + relativedelta(months=1, days=14),
+                                  bill_amount)
+            logging.debug('Created invoice, due: ' + str(invoice.amount_due))
+            invoices.append(invoice)
+
+        '''
         billing_schedules = {'Annual': None, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
 
         logging.debug('Creating invoices...')
@@ -389,7 +410,7 @@ class PolicyAccounting(object):
         else:
             logging.warning('No invoices created, ' + self.policy.policy_number + ' had an invalid billing type.')
             print "You have chosen a bad billing schedule."
-
+        '''
         for invoice in invoices:
             db.session.add(invoice)
         logging.debug('Begin db commit for invoices on ' + self.policy.policy_number)

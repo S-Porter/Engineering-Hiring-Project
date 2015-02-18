@@ -4,10 +4,8 @@ body {
     color: white;
 }
 
-tr, th {
-    padding: 5px;
-    padding-left: 15px;
-    padding-right: 15px;
+fieldset {
+    width: 33em;
 }
 
 h2 {
@@ -17,13 +15,11 @@ h2 {
 
 label {
     display: inline-block;
-    width: 7em;
-}
-
-li label {
     width: 12em;
 }
 
-fieldset {
-    width: 25em;
+tr, th {
+    padding: 5px;
+    padding-left: 15px;
+    padding-right: 15px;
 }

@@ -1,6 +1,7 @@
 # You will probably need more methods from flask but this one is a good start.
 from flask import render_template, redirect, request, flash, url_for
 from datetime import date, datetime
+from decimal import Decimal, ROUND_05UP
 from sqlalchemy import and_
 
 # Import things from Flask that we need.
@@ -22,11 +23,13 @@ def index():
 
 @app.route('/policy/', methods=['POST'])
 def policy():
+    cents = Decimal('.01')
 
     if not request.form['date']:
         date_cursor = datetime.now().date()
     else:
         date_cursor = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        date_cursor = date_cursor.date()
 
     policies = Policy.query.filter_by(id=request.form['id']).all()
     if not policies:
@@ -42,18 +45,23 @@ def policy():
     deleted_invoices = Invoice.query.filter_by(policy_id=request.form['id'])\
                                     .filter(and_(Invoice.deleted == 1, Invoice.bill_date <= date_cursor))\
                                     .all()
-    
     payments = Payment.query.filter_by(policy_id=request.form['id']).all()
-    # store the name of the contact instead of the ID for display on the page.
+
+    # map ids to names, and currency to strings for use in the template
     for payment in payments:
         contact = Contact.query.filter_by(id=payment.contact_id).one()
         payment.contact_name = contact.name
+        payment.amount_text = str(Decimal(payment.amount_paid).quantize(cents, ROUND_05UP))
+    for invoice in current_invoices:
+        invoice.amount_text = str(Decimal(invoice.amount_due).quantize(cents, ROUND_05UP))
+    for invoice in deleted_invoices:
+        invoice.amount_text = str(Decimal(invoice.amount_due).quantize(cents, ROUND_05UP))
 
     insured = Contact.query.filter_by(id=current.named_insured).one()
     agent = Contact.query.filter_by(id=current.agent).one()
 
     data = {'policy_id': request.form['id'],
-            'date_cursor': date_cursor.date(),
+            'date_cursor': date_cursor,
             'balance': balance,
             'current_invoices': current_invoices,
             'deleted_invoices': deleted_invoices,
@@ -62,7 +70,7 @@ def policy():
             'billing': current.billing_schedule,
             'effective_date': current.effective_date,
             'status': current.status,
-            'annual_premium': current.annual_premium,
+            'annual_premium': Decimal(current.annual_premium).quantize(cents, ROUND_05UP),
             'named_insured': insured.name,
             'agent_name': agent.name,
             'canceled_date': current.canceled_date,

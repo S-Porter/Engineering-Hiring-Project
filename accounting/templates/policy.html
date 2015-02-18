@@ -43,7 +43,7 @@
                 <th>{{ invoice.bill_date }}</th>
                 <th>{{ invoice.due_date }}</th>
                 <th>{{ invoice.cancel_date }}</th>
-                <th>${{ invoice.amount_due }}</th>
+                <th>${{ invoice.amount_text }}</th>
             </tr>
             {% endfor %}
         </table>
@@ -60,7 +60,7 @@
             {% for payment in passed_data['payments'] %}
             <tr>
                 <th>{{ payment.contact_name }}</th>
-                <th>${{ payment.amount_paid }}</th>
+                <th>${{ payment.amount_text }}</th>
                 <th>{{ payment.transaction_date }}</th>
             </tr>
             {% endfor %}
@@ -81,7 +81,7 @@
                 <th>{{ invoice.bill_date }}</th>
                 <th>{{ invoice.due_date }}</th>
                 <th>{{ invoice.cancel_date }}</th>
-                <th>${{ invoice.amount_due }}</th>
+                <th>${{ invoice.amount_text }}</th>
             </tr>
             {% endfor %}
         </table>
