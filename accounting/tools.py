@@ -349,68 +349,13 @@ class PolicyAccounting(object):
             months_after_eff_date = i * (12 / required_invoices)
             bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
             invoice = Invoice(self.policy.id,
-                                  bill_date,
-                                  bill_date + relativedelta(months=1),
-                                  bill_date + relativedelta(months=1, days=14),
-                                  bill_amount)
+                              bill_date,
+                              bill_date + relativedelta(months=1),
+                              bill_date + relativedelta(months=1, days=14),
+                              bill_amount)
             logging.debug('Created invoice, due: ' + str(invoice.amount_due))
             invoices.append(invoice)
 
-        '''
-        billing_schedules = {'Annual': None, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
-
-        logging.debug('Creating invoices...')
-        invoices = []
-        first_invoice = Invoice(self.policy.id,
-                                self.policy.effective_date,  # bill_date
-                                self.policy.effective_date + relativedelta(months=1),  # due
-                                self.policy.effective_date + relativedelta(months=1, days=14),  # cancel
-                                self.policy.annual_premium)
-        invoices.append(first_invoice)
-
-        if self.policy.billing_schedule == "Annual":
-            logging.info('Annual billing created for ' + self.policy.policy_number)
-            pass
-        elif self.policy.billing_schedule == "Two-Pay":
-            first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
-            for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
-                months_after_eff_date = i*6
-                bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
-                invoice = Invoice(self.policy.id,
-                                  bill_date,
-                                  bill_date + relativedelta(months=1),
-                                  bill_date + relativedelta(months=1, days=14),
-                                  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
-                invoices.append(invoice)
-            logging.info('Two-Pay billing created for ' + self.policy.policy_number)
-        elif self.policy.billing_schedule == "Quarterly":
-            first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
-            for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
-                months_after_eff_date = i*3
-                bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
-                invoice = Invoice(self.policy.id,
-                                  bill_date,
-                                  bill_date + relativedelta(months=1),
-                                  bill_date + relativedelta(months=1, days=14),
-                                  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
-                invoices.append(invoice)
-            logging.info('Quarterly billing created for ' + self.policy.policy_number)
-        elif self.policy.billing_schedule == "Monthly":
-            first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
-            for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
-                months_after_eff_date = i
-                bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
-                invoice = Invoice(self.policy.id,
-                                  bill_date,
-                                  bill_date + relativedelta(months=1),
-                                  bill_date + relativedelta(months=1, days=14),
-                                  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
-                invoices.append(invoice)
-            logging.info('Monthly billing created for ' + self.policy.policy_number)
-        else:
-            logging.warning('No invoices created, ' + self.policy.policy_number + ' had an invalid billing type.')
-            print "You have chosen a bad billing schedule."
-        '''
         for invoice in invoices:
             db.session.add(invoice)
         logging.debug('Begin db commit for invoices on ' + self.policy.policy_number)

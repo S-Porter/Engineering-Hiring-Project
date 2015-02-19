@@ -1,14 +1,15 @@
 from accounting import db
 # from sqlalchemy.ext.declarative import declarative_base
-# 
+#
 # DeclarativeBase = declarative_base()
+
 
 class Policy(db.Model):
     __tablename__ = 'policies'
 
     __table_args__ = {}
 
-    #column definitions
+    # column definitions
     id = db.Column(u'id', db.INTEGER(), primary_key=True, nullable=False)
     policy_number = db.Column(u'policy_number', db.VARCHAR(length=128), nullable=False)
     effective_date = db.Column(u'effective_date', db.DATE(), nullable=False)
@@ -33,7 +34,7 @@ class Contact(db.Model):
 
     __table_args__ = {}
 
-    #column definitions
+    # column definitions
     id = db.Column(u'id', db.INTEGER(), primary_key=True, nullable=False)
     name = db.Column(u'name', db.VARCHAR(length=128), nullable=False)
     role = db.Column(u'role', db.Enum(u'Named Insured', u'Agent'), nullable=False)
@@ -48,7 +49,7 @@ class Invoice(db.Model):
 
     __table_args__ = {}
 
-    #column definitions
+    # column definitions
     id = db.Column(u'id', db.INTEGER(), primary_key=True, nullable=False)
     policy_id = db.Column(u'policy_id', db.INTEGER(), db.ForeignKey('policies.id'), nullable=False)
     bill_date = db.Column(u'bill_date', db.DATE(), nullable=False)
@@ -70,7 +71,7 @@ class Payment(db.Model):
 
     __table_args__ = {}
 
-    #column definitions
+    # column definitions
     id = db.Column(u'id', db.INTEGER(), primary_key=True, nullable=False)
     policy_id = db.Column(u'policy_id', db.INTEGER(), db.ForeignKey('policies.id'), nullable=False)
     contact_id = db.Column(u'contact_id', db.INTEGER(), db.ForeignKey('contacts.id'), nullable=False)

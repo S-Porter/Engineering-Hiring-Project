@@ -13,6 +13,7 @@ from tools import PolicyAccounting
 
 app.secret_key = 'super secret'
 
+
 # Routing for the server.
 @app.route('/')
 @app.route('/index/')
@@ -20,6 +21,7 @@ def index():
     msg = "Please enter a policy ID and date to view more information on an "\
           + "account. If the date is left blank, it will default to today."
     return render_template('index.html', name='Mr. Tester', text=msg)
+
 
 @app.route('/policy/', methods=['POST'])
 def policy():
@@ -33,7 +35,7 @@ def policy():
 
     policies = Policy.query.filter_by(id=request.form['id']).all()
     if not policies:
-        flash("Entered policy id wasn't found, please try a different policy ID.")
+        flash("Entered policy id not found, please try a different policy ID.")
         return redirect(url_for('index'))
 
     current = policies[0]

@@ -1,8 +1,10 @@
 
 body {
     background-color: #1a1a1a;
+    min-width: 430px;
     color: white;
     margin: 0px;
+    padding: 1em; 
 }
 
 fieldset {
@@ -10,13 +12,14 @@ fieldset {
     min-width: 410px;
 }
 
-legend {
+h1 {
     color: #679933;
 }
 
 h2 {
     margin-top: 1.5em;
     margin-bottom: 0.6em;
+    color: #FFA68A;
 }
 
 label {
@@ -24,24 +27,39 @@ label {
     width: 12em;
 }
 
+table {
+    width: 100%;
+    margin: 0.6em;
+}
+
 table, th, td {
     border: 1px solid white;
     border-collapse: collapse;
 }
 
-tr, th {
+td, th {
     padding: 0.3em;
-    padding-left: 2.5em;
-    padding-right: 2.5em;
+}
+
+th {
+    color: #3d6317
+}
+
+td {
+    text-align: center;
 }
 
 .spacer {
     margin-bottom: 4px;
 }
 
-@media all and (min-width: 500px) {
+.pagewrapper {
+    width: 100%;
+}
+
+@media all and (min-width: 700px) {
     .pagewrapper {
-        width: 500px;
+        width: 700px;
         margin-left: auto;
         margin-right: auto;
     }
