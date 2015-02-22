@@ -6,30 +6,76 @@
   <title>Insurance Portal</title>
   <meta name="description" content="View all your insurance information from one easy page!">
   <meta name="author" content="Sean Porter">
-  <!--<script src="{{ url_for('static', filename='jquery-1.11.2.min.js') }}"></script>-->
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <script>
+    "use strict";
+    
+    $(function() {
+        $( "#submit_button" ).click(validate);
+    })
+    
+    function validate() {
+        var policy_number = parseInt( $( "#policy_number" ).val() );
+        var supplied_date = $( "#date_box" ).val();
+        
+        if (!Number.isInteger(policy_number)) {
+            $( "#policy_number" ).val("");
+            $( "#submit_error" ).text("The policy number you entered was not recognized, please try again.");
+            return;
+        }
+        
+        // if the user leaves date blank just pass the empty string, no need to verify format.
+        if (supplied_date != "") {
+            //naive format match, doesn't check whether the date is actually valid.
+            var reg = /^\d{4}[\/\-](0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])$/;
+            if (!reg.test(supplied_date)) {
+                $( "#date_box" ).val("");
+                $( "#submit_error" ).text("The date you entered was not recognized, please try again.");
+                return;
+            }
+        }
+        
+        //clear the error box in case they hit the back button
+        $( "#submit_error" ).text("");
+        $( "#policy_form" ).submit();
+    }
+
+    if (!Number.isInteger) {
+      Number.isInteger = function isInteger(nVal) {
+        return typeof nVal === 'number'
+          && isFinite(nVal)
+          && nVal > -9007199254740992
+          && nVal < 9007199254740992
+          && Math.floor(nVal) === nVal;
+      };
+    }
+  </script>
   <!--[if lt IE 9]>
-<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-<![endif]-->
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
 </head>
 <body>
     <div class="pagewrapper">
         <p>Welcome to the insurance portal, {{ name }}!!</p>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <p>{{ message }}</p>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
         <p>{{ text }}</p>
-        <form method="post" action="{{ url_for('policy') }}">
+        <form method="post" action="{{ url_for('policy') }}" id="policy_form"> <!--method="post" action="{{ url_for('policy') }}" -->
             <fieldset>
                 <legend>Enter policy information</legend>
-                <label>Policy ID:</label><input type="textbox" name="id" class="spacer"required></input><br/>
+                <label>Policy ID:</label><input type="textbox" name="id" class="spacer" id="policy_number" required></input><br/>
                 <label>Date (YYYY-MM-DD):</label><input id="date_box" type="date" name="date" class="spacer"></input><br/>
-                <input type="submit" value="Submit"></input>
+                <input value="Submit" type="button" id="submit_button"></input> <!-- type="submit" -->
             </fieldset>
         </form>
+        <p id="submit_error">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </p>
     </div>
 </body>
+
 </html>

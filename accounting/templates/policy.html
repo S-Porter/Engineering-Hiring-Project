@@ -8,12 +8,19 @@
   <meta name="author" content="Sean Porter">
   <!--<script src="{{ url_for('static', filename='jquery-1.11.2.min.js') }}"></script>-->
   <!--[if lt IE 9]>
-<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-<![endif]-->
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
 </head>
 <body>
     <div class="pagewrapper">
         <h1>Information for policy {{ passed_data['policy_id'] }} on {{ passed_data['date_cursor'] }}:</h1>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         <ul>
             <li><label>Policy ID:</label>{{ passed_data['policy_id'] }}</li>
             <li><label>Policy Name:</label>{{ passed_data['policy_name'] }}</li>

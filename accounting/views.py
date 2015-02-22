@@ -30,8 +30,12 @@ def policy():
     if not request.form['date']:
         date_cursor = datetime.now().date()
     else:
-        date_cursor = datetime.strptime(request.form['date'], '%Y-%m-%d')
-        date_cursor = date_cursor.date()
+        try:
+            date_cursor = datetime.strptime(request.form['date'], '%Y-%m-%d')
+            date_cursor = date_cursor.date()
+        except:
+            date_cursor = datetime.now().date()
+            flash("Entered date was not valid, showing information for today's date.")
 
     policies = Policy.query.filter_by(id=request.form['id']).all()
     if not policies:
