@@ -1,5 +1,5 @@
 # You will probably need more methods from flask but this one is a good start.
-from flask import render_template, redirect, request, flash, url_for
+from flask import render_template, redirect, request, flash, url_for, jsonify
 from datetime import date, datetime
 from decimal import Decimal, ROUND_05UP
 from sqlalchemy import and_
@@ -67,7 +67,7 @@ def policy():
     agent = Contact.query.filter_by(id=current.agent).one()
 
     data = {'policy_id': request.form['id'],
-            'date_cursor': date_cursor,
+            'date': str(date_cursor),
             'balance': balance,
             'current_invoices': current_invoices,
             'deleted_invoices': deleted_invoices,
@@ -106,7 +106,7 @@ def maintenance():
             'schedules': available_schedules,
             'date': request.form['date']}
 
-    return render_template('maintenance.html', passed_data = data)
+    return render_template('maintenance.html', passed_data=data)
 
 
 @app.route('/payment/', methods=['POST'])
@@ -127,6 +127,8 @@ def billing():
 def insured():
     pa = PolicyAccounting(request.form['id'])
     if not pa.update_named_insured(request.form['new_insured']):
-        return 'Could not update the account. Is it canceled or expired?.'
+        msg = 'Could not update the account. Is it canceled or expired?.'
 
-    return 'Success!'
+    msg = 'Named-insured updated successfully!'
+    return jsonify(text=msg,
+                   name=request.form['new_insured'])

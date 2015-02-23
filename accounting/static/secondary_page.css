@@ -57,6 +57,10 @@ td {
     width: 100%;
 }
 
+#submit_error {
+    background-color: rgb(137, 0, 0);
+}
+
 @media all and (min-width: 700px) {
     .pagewrapper {
         width: 700px;

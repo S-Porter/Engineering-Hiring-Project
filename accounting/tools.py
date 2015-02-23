@@ -24,7 +24,7 @@ If you have any questions, please contact Amanda at:
 class PolicyAccounting(object):
 
     billing_schedules = {'Annual': 1, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
-    
+
     """
      Each policy has its own instance of accounting.
     """
@@ -265,7 +265,7 @@ class PolicyAccounting(object):
         if contact_query.count() == 0:
             logging.info('No current contact with this name, '
                          + 'creating new contact.')
-            insured = Contact(new_insured, 'Named Insured')
+            insured = Contact(new_insured.title(), 'Named Insured')
             db.session.add(insured)
             db.session.commit()
         else:

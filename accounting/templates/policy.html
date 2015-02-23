@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='policy_page.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='secondary_page.css') }}">
   <title>Insurance Portal</title>
   <meta name="description" content="View all your insurance information from one easy page!">
   <meta name="author" content="Sean Porter">
@@ -13,7 +13,7 @@
 </head>
 <body>
     <div class="pagewrapper">
-        <h1>Information for policy {{ passed_data['policy_id'] }} on {{ passed_data['date_cursor'] }}:</h1>
+        <h1>Information for policy {{ passed_data['policy_id'] }} on {{ passed_data['date'] }}:</h1>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
@@ -38,6 +38,11 @@
             
             <li><label>Agent:</label>{{ passed_data['agent_name'] }}</li>
         </ul>
+        <form method="post" action="{{ url_for('maintenance') }}">
+            <input type="textbox" name="id" value="{{ passed_data['policy_id'] }}" hidden>
+            <input type="textbox" name="date" value="{{ passed_data['date'] }}" hidden>
+            <input value="Account Maintenance" type="submit"></input>
+        </form>
         <h2>Current Invoices</h2>
             <table>
                 <tr>
@@ -95,12 +100,6 @@
                 {% endfor %}
             </table>
         {% endif %}
-        <p>Account Maintenance</p>
-        <form method="post" action="{{ url_for('maintenance') }}">
-            <input type="textbox" name="id" value="{{ passed_data['policy_id'] }}" hidden>
-            <input type="textbox" name="date" value="{{ passed_data['date'] }}" hidden>
-            <input value="Submit" type="submit"></input>
-        </form>
     </div>
 </body>
 </html>
