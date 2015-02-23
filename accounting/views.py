@@ -83,3 +83,50 @@ def policy():
             'cancel_reason': current.cancel_reason}
 
     return render_template('policy.html', passed_data=data)
+
+
+@app.route('/maintenance/', methods=['POST'])
+def maintenance():
+    policy = Policy.query.filter_by(id=request.form['id']).one()
+    insured = Contact.query.filter_by(id=policy.named_insured).one()
+    agent = Contact.query.filter_by(id=policy.agent).one()
+    current_billing = policy.billing_schedule
+
+    # returns a list of all schedules without the current included
+    # simplifies the clientside checking
+    available_schedules = []
+    for schedule in PolicyAccounting.billing_schedules:
+        if schedule != current_billing:
+            available_schedules.append(schedule)
+
+    data = {'policy_id': request.form['id'],
+            'billing': policy.billing_schedule,
+            'named_insured': insured.name,
+            'agent_name': agent.name,
+            'schedules': available_schedules,
+            'date': request.form['date']}
+
+    return render_template('maintenance.html', passed_data = data)
+
+
+@app.route('/payment/', methods=['POST'])
+def payment():
+    pa = PolicyAccounting(request.form['id'])
+    pa.make_payment(request.form['payment_amount'], pa.policy.agent)
+    return 'Payment successful!'
+
+
+@app.route('/billing/', methods=['POST'])
+def billing():
+    pa = PolicyAccounting(request.form['id'])
+    pa.change_billing_schedule(request.form['new_billing'])
+    return 'Billing updated successfully!'
+
+
+@app.route('/insured/', methods=['POST'])
+def insured():
+    pa = PolicyAccounting(request.form['id'])
+    if not pa.update_named_insured(request.form['new_insured']):
+        return 'Could not update the account. Is it canceled or expired?.'
+
+    return 'Success!'

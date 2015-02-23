@@ -22,6 +22,9 @@ If you have any questions, please contact Amanda at:
 
 
 class PolicyAccounting(object):
+
+    billing_schedules = {'Annual': 1, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
+    
     """
      Each policy has its own instance of accounting.
     """
@@ -136,7 +139,7 @@ class PolicyAccounting(object):
             print "Unable to change billing schedule while policy is inactive."
             return
 
-        if str.title(new_billing_schedule) not in ['Annual', 'Two-Pay', 'Quarterly', 'Monthly']:
+        if new_billing_schedule.title() not in self.billing_schedules:
             print "Unknown billing schedule. Options are Annual, Two-Pay, Quarterly, and Monthly: "
         if self.policy.billing_schedule == new_billing_schedule:
             print "This policy is already on " + new_billing_schedule + " billing."
@@ -163,7 +166,7 @@ class PolicyAccounting(object):
             policy_info['eff_date'] = datetime.strptime(raw.strip(), '%Y-%m-%d')
 
         raw = raw_input('Please enter a billing frequency: ')
-        while str.title(raw.strip()) not in ['Annual', 'Two-Pay', 'Quarterly', 'Monthly']:
+        while str.title(raw.strip()) not in self.billing_schedules:
             raw = raw_input('Billing options are Annual, Two-Pay, Quarterly, and Monthly: ')
         policy_info['billing'] = str.title(raw.strip())
 
@@ -338,10 +341,8 @@ class PolicyAccounting(object):
         for invoice in self.policy.invoices:
             invoice.deleted = 1
 
-        billing_schedules = {'Annual': 1, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
-
-        required_invoices = billing_schedules[self.policy.billing_schedule]
-        bill_amount = Decimal(self.policy.annual_premium) / Decimal(billing_schedules.get(self.policy.billing_schedule))
+        required_invoices = self.billing_schedules[self.policy.billing_schedule]
+        bill_amount = Decimal(self.policy.annual_premium) / Decimal(self.billing_schedules.get(self.policy.billing_schedule))
         logging.debug('Creating invoices...')
         invoices = []
 

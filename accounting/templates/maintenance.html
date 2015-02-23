@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='policy_page.css') }}">
+  <title>Insurance Portal</title>
+  <meta name="description" content="View all your insurance information from one easy page!">
+  <meta name="author" content="Sean Porter">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div class="pagewrapper">
+      <h1>Account maintenance, policy {{ passed_data['policy_id'] }}:</h1>
+      <form method="post" action="{{ url_for('policy') }}" id="return_form">
+          <input type="textbox" name="date" value="{{ passed_data['date'] }}" hidden>
+          <input type="textbox" name="id" value="{{ passed_data['policy_id'] }}" hidden>
+          <input value="Return to Account Overview" type="submit"></input>
+        </form>
+      <h2>Make a payment</h2>
+      <fieldset>
+        <legend>Make a payment</legend>
+        <p>Uses the agent on the policy as the payment-maker.</p>
+        <form method="post" action="{{ url_for('payment') }}" id="payment_form">
+          <input type="textbox" name="id" value="{{ passed_data['policy_id'] }}" hidden>
+          <input type="text" name="payment_amount"></input>
+          <input value="Submit" type="submit"></input>
+        </form>
+      </fieldset>
+      <h2>Change Billing Schedule</h2>
+      <fieldset>
+        <legend>Change Billing Schedule</legend>
+        <form method="post" action="{{ url_for('billing') }}" id="billing_form">
+          <input type="textbox" name="id" value="{{ passed_data['policy_id'] }}" hidden>
+          <select name="new_billing">
+            {% for schedule in passed_data['schedules'] %}
+              <option>{{ schedule }}</option>
+            {% endfor %}
+          </select>
+          <input value="Update" type="submit"></input>
+        </form>
+      </fieldset>
+      <h2>Change named-insured</h2>
+      <fieldset>
+        <legend>Change named-insured</legend>
+        <p>Currently insured: {{ passed_data['named_insured'] }}</p>
+        <form method="post" action="{{ url_for('insured') }}" id="insured_form">
+          <input type="textbox" name="id" value="{{ passed_data['policy_id'] }}" hidden>
+          <input type="text" name="new_insured"></input>
+          <input value="Update" type="submit"></input>
+        </form>
+      </fieldset>
+  </div>
+</body>
+</html>
